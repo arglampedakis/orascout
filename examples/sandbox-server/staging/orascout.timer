@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic orascout cycle (sandbox cadence — 30s)
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

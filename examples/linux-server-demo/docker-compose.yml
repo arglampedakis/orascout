@@ -1,0 +1,85 @@
+# Linux-server demo: a faithful simulation of TUTORIAL.md Part B in Docker.
+#
+# Services:
+#   registry      OCI registry on registry:5000 (exposed to host on 5000)
+#   pusher        one-shot, builds & pushes v1 fixtures, exits 0
+#   linux-server  PID 1 = systemd. Runs:
+#                   - orascout.timer (every 30s)
+#                   - tomcat.service          (Apache Tomcat 8.5)
+#                   - hello-jar.service       (tiny Java HTTP server :8082)
+#                   - nginx (serves /var/www/html at :80)
+#                 Ports exposed to host:
+#                   8080 -> nginx (static)
+#                   8081 -> tomcat (WAR)
+#                   8082 -> JAR HTTP server
+#
+# Bring up:
+#   docker compose -f examples/linux-server-demo/docker-compose.yml up --build -d
+# Watch the live deploys:
+#   docker compose -f examples/linux-server-demo/docker-compose.yml \
+#     exec linux-server journalctl -u orascout.service -f
+# Push v2:
+#   docker compose -f examples/linux-server-demo/docker-compose.yml run --rm pusher v2
+# Tear down:
+#   docker compose -f examples/linux-server-demo/docker-compose.yml down -v
+
+services:
+
+  registry:
+    image: registry:2
+    container_name: orascout-lsd-registry
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/v2/"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  pusher:
+    build:
+      # Build context is the orascout repo root so the multi-stage Dockerfile
+      # can also see ../../ paths like go.mod if it ever needs them.
+      context: ../..
+      dockerfile: examples/linux-server-demo/pusher/Dockerfile
+    image: orascout-lsd-pusher
+    container_name: orascout-lsd-pusher
+    depends_on:
+      registry:
+        condition: service_healthy
+    environment:
+      REGISTRY_HOST: registry:5000
+    command: ["v1"]
+
+  linux-server:
+    build:
+      context: ../..
+      dockerfile: examples/linux-server-demo/linux-server/Dockerfile
+    image: orascout-lsd-linux-server
+    container_name: orascout-lsd-linux-server
+    # systemd-as-PID-1 needs privileged + cgroup access. This is a
+    # DEVELOPMENT-ONLY container.
+    privileged: true
+    cgroup: host
+    tmpfs:
+      - /run
+      - /run/lock
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    ports:
+      - "8080:80"     # nginx (static)
+      - "8081:8080"   # tomcat (WAR)
+      - "8082:8082"   # JAR HTTP server
+    depends_on:
+      registry:
+        condition: service_healthy
+      pusher:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "systemctl", "is-active", "--quiet", "orascout.timer"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s

@@ -1,0 +1,4 @@
+orascout E2E fixture, version 1.
+This is not a real JAR — it's a plain text file with the .jar extension so we
+can use the `jar` deploy strategy end-to-end. The strategy doesn't care what's
+inside the file; it just copies bytes from source to target.

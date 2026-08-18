@@ -1,0 +1,56 @@
+# Local OCI registry + E2E test runner.
+#
+# Three ways to use this file.
+#
+# A) FULL DOCKER (recommended on Windows, also works anywhere):
+#      Builds a test-runner container with Go + oras + jq + bash, runs e2e.sh
+#      inside it against the registry container. Nothing required on the host
+#      except Docker.
+#
+#        docker compose -f test/docker-compose.yml up --build \
+#          --abort-on-container-exit --exit-code-from e2e
+#        docker compose -f test/docker-compose.yml down -v
+#
+# B) HYBRID (Linux/macOS/WSL with Go+oras+jq installed locally):
+#      Bring up just the registry, run e2e.sh on the host.
+#
+#        docker compose -f test/docker-compose.yml up -d registry
+#        ./test/e2e.sh                       # REGISTRY_HOST defaults to localhost:5000
+#        docker compose -f test/docker-compose.yml down -v
+#
+# C) MANUAL: bring up registry and oras push by hand, then run orascout binary.
+
+services:
+  registry:
+    image: registry:2
+    container_name: orascout-test-registry
+    ports:
+      # Exposed so hybrid mode (B) can reach it as localhost:5000.
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/v2/"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  e2e:
+    build:
+      # Build context is the orascout root so the test container can `go build`
+      # against the live source tree.
+      context: ..
+      dockerfile: test/Dockerfile.test
+    container_name: orascout-test-e2e
+    depends_on:
+      registry:
+        condition: service_healthy
+    environment:
+      # Inside the compose network, the registry is reachable by service name.
+      REGISTRY_HOST: registry:5000
+    # Mount source RW so `go build` can populate the build cache. The cache
+    # speed-up only matters across runs; for a one-off run :ro would be fine.
+    volumes:
+      - ..:/src
+    working_dir: /src
+    # CMD baked into the image runs test/e2e.sh.

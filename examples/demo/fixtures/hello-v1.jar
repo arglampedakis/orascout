@@ -1,0 +1,3 @@
+orascout demo — JAR fixture v1.
+In a real deployment this is a real .jar. For the demo we don't care; the
+`jar` strategy just copies bytes from source to target.

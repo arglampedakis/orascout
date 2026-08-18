@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic orascout cycle (demo cadence — 30s, NOT a production value)
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

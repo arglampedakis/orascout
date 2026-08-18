@@ -1,0 +1,42 @@
+# orascout config — fill in the three TODO blocks for your registry.
+
+# 1. Point at YOUR registry. Common values:
+#       docker.io/<your-username-or-org>
+#       ghcr.io/<your-username-or-org>
+#       harbor.example.com/<your-project>
+# Do not include a scheme (no https://).
+registry_prefix: docker.io/CHANGE_ME_TO_YOUR_ORG
+
+# 2. The repos this server is responsible for. Each entry is "name:tag"
+# relative to registry_prefix above. Bare names default to :latest.
+# These three names must match the manifest titles you push.
+repos:
+  - foo:latest
+  - bar:latest
+  - bar-ui:latest
+
+# 3. Registry credentials. $REGISTRY_USERNAME / $REGISTRY_TOKEN are read
+# from /etc/orascout/env at startup (see EnvironmentFile= in orascout.service).
+# Leave as-is and edit /etc/orascout/env instead.
+#
+# How orascout maps these to HTTP auth:
+#   * username + password  -> HTTP Basic auth (Docker Hub, GHCR, most Harbor
+#     setups). The PAT goes in the password slot, hence the variable name is
+#     REGISTRY_TOKEN but it's referenced here as `password:`.
+#   * token (only)         -> HTTP Bearer auth (pre-issued OAuth tokens, some
+#     Harbor robot setups). If your registry uses this model, swap the two
+#     lines below for `token: $REGISTRY_TOKEN` and remove username/password.
+auth:
+  username: $REGISTRY_USERNAME
+  password: $REGISTRY_TOKEN
+
+# Cadence and paths. Defaults are fine for the sandbox.
+poll_interval: 30s
+artifacts_dir: /var/lib/orascout/artifacts
+state_file:    /var/lib/orascout/state.json
+lock_file:     /var/lib/orascout/orascout.lock
+log_file:      /var/log/orascout/orascout.log
+
+# Set to true ONLY for a local plain-HTTP test registry. Real registries
+# (Docker Hub, GHCR, Harbor with TLS) want this false.
+insecure: false

@@ -1,0 +1,89 @@
+# Demo stack: registry + orascout daemon + nginx serving the static deploy.
+#
+# What runs:
+#   registry   -> in-network OCI registry on registry:5000 (also localhost:5000)
+#   orascout   -> the daemon, polling registry every 10s (see config.yaml)
+#   nginx      -> serves the dist volume at http://localhost:8080
+#   pusher     -> one-shot helper that pushes initial v1 artifacts and exits
+#                 (you can re-run it with v2 via scripts/push-all.sh)
+#
+# Volumes:
+#   jars_target    -> orascout writes hello.jar here
+#   webapps_target -> orascout writes ROOT.war here
+#   dist_target    -> orascout syncs the dist into here; nginx reads from it
+#   state          -> orascout state + artifact cache (so digest is remembered
+#                     across container restarts)
+#
+# Bring up:
+#   docker compose -f examples/demo/docker-compose.yml up --build -d
+#   docker compose -f examples/demo/docker-compose.yml logs -f orascout
+# Push v2 (after stack is up):
+#   docker compose -f examples/demo/docker-compose.yml run --rm pusher v2
+# Tear down:
+#   docker compose -f examples/demo/docker-compose.yml down -v
+
+services:
+  registry:
+    image: registry:2
+    container_name: orascout-demo-registry
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/v2/"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  orascout:
+    build:
+      # Build from the orascout root (two levels up from this compose file).
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: orascout-demo-daemon
+    depends_on:
+      registry:
+        condition: service_healthy
+      pusher:
+        condition: service_completed_successfully
+    volumes:
+      - ./config.yaml:/etc/orascout/config.yaml:ro
+      - jars_target:/srv/jars
+      - webapps_target:/srv/webapps
+      - dist_target:/srv/dist
+      - state:/var/lib/orascout
+    # `run` (no --once) so the daemon loops on the configured poll_interval.
+    command: ["run", "-c", "/etc/orascout/config.yaml"]
+
+  nginx:
+    image: nginx:alpine
+    container_name: orascout-demo-nginx
+    depends_on:
+      - orascout
+    ports:
+      - "8080:80"
+    volumes:
+      - dist_target:/usr/share/nginx/html:ro
+
+  pusher:
+    # Reuse the test image which already has oras + bash + curl.
+    build:
+      context: ../..
+      dockerfile: test/Dockerfile.test
+    container_name: orascout-demo-pusher
+    depends_on:
+      registry:
+        condition: service_healthy
+    volumes:
+      - ./:/demo:ro
+    working_dir: /demo
+    # First positional arg = version tag, defaults to v1.
+    entrypoint: ["bash", "/demo/scripts/push-all.sh"]
+    command: ["v1"]
+
+volumes:
+  jars_target:
+  webapps_target:
+  dist_target:
+  state:

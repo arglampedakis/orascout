@@ -1,0 +1,22 @@
+[Unit]
+Description=orascout - ORAS artifact watcher (single cycle, triggered by .timer)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Run as the same user that owns the deploy targets. For systemd-user-managed
+# services (e.g. systemctl --user) this needs to be that user.
+User=tomcat
+Group=tomcat
+EnvironmentFile=-/etc/orascout/env
+ExecStart=/usr/local/bin/orascout run -c /etc/orascout/config.yaml --once
+# Reasonable hardening for a network-facing puller. Loosen if your hooks need
+# more.
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,30 @@
+# Sandbox "Linux server" — single privileged container running systemd, Tomcat
+# 8.5, JDK 8, nginx, plus placeholder foo / bar / bar-ui services so you can
+# install and configure orascout against your real registry. See
+# INSTALL-STEPS.md.
+
+services:
+  sandbox:
+    build:
+      context: ../..
+      dockerfile: examples/sandbox-server/Dockerfile
+    image: orascout-sandbox-server
+    container_name: orascout-sandbox-server
+    # systemd-as-PID-1 needs privileged + cgroup access. Dev-only.
+    privileged: true
+    cgroup: host
+    tmpfs:
+      - /run
+      - /run/lock
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    ports:
+      - "8080:80"     # nginx (frontend, served at /Bar-UI/)
+      - "8081:8080"   # Tomcat -> bar WAR
+      - "8090:8090"   # foo JAR HTTP server
+    healthcheck:
+      test: ["CMD", "systemctl", "is-system-running", "--quiet"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 45s

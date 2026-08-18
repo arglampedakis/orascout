@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>orascout demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; }
+    .v { background: #e0f4ff; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+    .meta { color: #888; font-size: 0.85rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Hello from orascout 👋</h1>
+  <p>This page is version <span class="v">v1</span>, served by nginx out of a
+     Docker volume that <code>orascout</code> writes into.</p>
+  <p>Push <code>dist-v2</code> with <code>./scripts/push-all.sh v2</code> and
+     reload this page in a few seconds — orascout will have replaced the
+     contents of the volume without restarting anything.</p>
+  <p class="meta">Static asset deploy via OCI registry annotations.</p>
+</body>
+</html>

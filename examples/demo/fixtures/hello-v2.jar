@@ -1,0 +1,3 @@
+orascout demo — JAR fixture v2.
+A different blob so the manifest digest changes and orascout actually
+notices something needs redeploying.

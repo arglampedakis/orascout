@@ -1,0 +1,29 @@
+# orascout config for the all-Docker demo.
+#
+# The orascout daemon container reads this file at /etc/orascout/config.yaml
+# (bind-mounted by docker-compose.yml). It polls the in-network registry every
+# 10 seconds (tight for the demo; default in production is 5m) and deploys
+# three artifacts:
+#
+#   - hello-jar  -> /srv/jars/hello.jar               (jar strategy)
+#   - hello-war  -> /srv/webapps/ROOT.war             (war strategy)
+#   - hello-dist -> /srv/dist/...                     (static strategy)
+#
+# All three target paths are Docker volumes; the nginx sidecar serves /srv/dist
+# at http://localhost:8080 so you can SEE the static deploy land.
+
+registry_prefix: registry:5000/orascout-demo
+
+poll_interval: 10s
+
+artifacts_dir: /var/lib/orascout/artifacts
+state_file: /var/lib/orascout/state.json
+lock_file: /var/lib/orascout/orascout.lock
+log_file: /var/log/orascout/orascout.log
+
+insecure: true
+
+repos:
+  - hello-jar:latest
+  - hello-war:latest
+  - hello-dist:latest

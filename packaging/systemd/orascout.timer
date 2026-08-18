@@ -1,0 +1,13 @@
+[Unit]
+Description=Periodic orascout cycle
+
+[Timer]
+# Fire 30s after boot, then every 5 minutes. The orascout binary also takes a
+# lockfile so two firings can't overlap if a previous cycle is still running.
+OnBootSec=30s
+OnUnitActiveSec=5min
+AccuracySec=15s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,42 @@
+version: 2
+
+project_name: orascout
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: orascout
+    main: ./cmd/orascout
+    binary: orascout
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+# Release a flat binary (orascout-linux-amd64, orascout-linux-arm64) so the
+# install.sh one-liner can curl it directly with no archive step.
+archives:
+  - formats: [binary]
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  draft: false
+  prerelease: auto
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

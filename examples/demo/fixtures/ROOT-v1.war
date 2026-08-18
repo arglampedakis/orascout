@@ -1,0 +1,3 @@
+orascout demo — WAR fixture v1.
+Same trick as the jar fixtures: not a real WAR, just bytes the `war`
+strategy will copy into a tomcat webapps directory.

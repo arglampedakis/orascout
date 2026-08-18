@@ -1,0 +1,22 @@
+# orascout config for the linux-server-demo container.
+#
+# The container reaches the registry service over the compose network at
+# `registry:5000` (plain HTTP, hence insecure: true).
+
+registry_prefix: registry:5000/orascout-demo
+
+# Demo cadence. orascout.timer fires every 30s anyway; this is the in-cycle
+# minimum interval if you switched to `orascout run` (no --once) mode.
+poll_interval: 30s
+
+artifacts_dir: /var/lib/orascout/artifacts
+state_file:    /var/lib/orascout/state.json
+lock_file:     /var/lib/orascout/orascout.lock
+log_file:      /var/log/orascout/orascout.log
+
+insecure: true
+
+repos:
+  - hello-jar:latest
+  - hello-war:latest
+  - hello-dist:latest

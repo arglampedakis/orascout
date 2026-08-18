@@ -1,0 +1,16 @@
+[Unit]
+Description=foo JAR service
+After=network.target
+# Don't try to start before the JAR file is in place.
+ConditionPathExists=/home/tomcat/jar-services/foo.jar
+
+[Service]
+Type=simple
+User=tomcat
+Group=tomcat
+ExecStart=/usr/lib/jvm/java-8-openjdk-amd64/bin/java -jar /home/tomcat/jar-services/foo.jar
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

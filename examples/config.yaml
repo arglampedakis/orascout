@@ -1,0 +1,53 @@
+# Example orascout config — copy to /etc/orascout/config.yaml on the target host.
+
+# Required: the registry + namespace prefix prepended to every entry in `repos`.
+# Do NOT include scheme (https://). Example values:
+#   docker.io/myorg
+#   ghcr.io/myorg
+#   harbor.example.com/myproject
+registry_prefix: docker.io/myorg
+
+# How often to poll the registry. Default 5m.
+poll_interval: 5m
+
+# Where to keep pulled artifacts on disk. One subdirectory per repo.
+artifacts_dir: /var/lib/orascout/artifacts
+
+# Persistent record of "last deployed digest" per repo. Atomic writes.
+state_file: /var/lib/orascout/state.json
+
+# File lock to prevent overlapping cycles when a systemd timer fires fast.
+lock_file: /var/run/orascout.lock
+
+# Where to write structured logs. Empty = stderr only.
+log_file: /var/log/orascout/orascout.log
+
+# Optional: registry auth. Values starting with `$` are expanded from the
+# process environment — keep secrets out of this file by setting them in
+# the systemd unit's EnvironmentFile (e.g. /etc/orascout/env).
+#
+# For Docker Hub / GHCR / typical Harbor setups: use username + a Personal
+# Access Token in the password slot. The PAT goes in `password:` because
+# that's the basic-auth slot the registry expects, even though it's
+# semantically a token (hence the env var name).
+auth:
+  username: $REGISTRY_USERNAME
+  password: $REGISTRY_TOKEN
+  # token: $REGISTRY_TOKEN     # use INSTEAD if your registry issues real
+                               # bearer tokens (some Harbor setups, OAuth)
+
+# Optional: after any cycle that actually deployed something, push the log
+# file to this artifact (relative to registry_prefix). Leave empty to disable.
+logs_push: deployment-logs:latest
+
+# Set to true ONLY for local test registries that speak http.
+insecure: false
+
+# The list of artifacts to watch. Each entry is "name:tag" relative to
+# registry_prefix. A bare "name" is treated as "name:latest".
+repos:
+  - foo:latest
+  - bar:latest
+  - bar-ui:latest
+  - db-migration:latest
+  - mailer:latest

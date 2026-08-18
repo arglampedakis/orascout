@@ -1,0 +1,7 @@
+orascout E2E fixture, version 2.
+Same idea as v1, but with different content so the manifest digest changes and
+the watcher's diff logic actually triggers a redeploy. The whole point of the
+two-version flow is to verify the cycle:
+  push v1 -> orascout --once -> file appears
+  push v2 -> orascout --once -> file content changes
+  orascout --once again -> no-op (digest matches state file)

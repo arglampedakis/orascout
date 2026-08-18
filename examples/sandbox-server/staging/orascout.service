@@ -1,0 +1,18 @@
+[Unit]
+Description=orascout - one polling cycle, triggered by .timer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# root so it can write to /home/tomcat/jar-services, /opt/tomcat/instances/...,
+# /var/www/html/..., and drive `systemctl` for system-level units.
+# In a production setup with stricter security you'd use a least-privilege user
+# with sudoers entries — see TUTORIAL.md Part C.
+User=root
+Group=root
+EnvironmentFile=-/etc/orascout/env
+ExecStart=/usr/local/bin/orascout run -c /etc/orascout/config.yaml --once
+
+[Install]
+WantedBy=multi-user.target

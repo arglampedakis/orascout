@@ -1,0 +1,17 @@
+[Unit]
+Description=Hello JAR — tiny HTTP server on :8082
+# Don't try to start before the JAR exists. orascout will deploy it on its
+# first cycle, then `systemctl start hello-jar.service` succeeds.
+ConditionPathExists=/opt/orascout/jars/hello.jar
+After=network.target
+
+[Service]
+Type=simple
+User=tomcat
+Group=tomcat
+ExecStart=/usr/lib/jvm/java-8-openjdk-amd64/bin/java -jar /opt/orascout/jars/hello.jar
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

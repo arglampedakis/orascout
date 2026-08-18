@@ -1,0 +1,17 @@
+# Always check out text files with LF so scripts and Go sources work on Linux,
+# regardless of the contributor's platform.
+* text=auto eol=lf
+
+# Files that must be LF (executable scripts, Go, YAML, systemd units, etc.)
+*.sh        text eol=lf
+*.go        text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.service   text eol=lf
+*.timer     text eol=lf
+Dockerfile* text eol=lf
+
+# Treat fixtures as binary so Git doesn't try to normalise their line endings —
+# they're not real JAR/WAR files, just test blobs whose digest we compare.
+*.jar       binary
+*.war       binary

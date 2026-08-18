@@ -1,0 +1,43 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  # Manual fallback — fires from the Actions UI's "Run workflow" button.
+  # Useful when the auto tag-trigger doesn't fire for any reason
+  # (e.g. first-run billing setup on a new account).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (must already exist on the repo)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # On tag-push: github.ref is "refs/tags/v0.1.0" — checked out natively.
+          # On workflow_dispatch: github.ref is "refs/heads/main"; we override
+          # with the user-supplied tag input so goreleaser sees a tag, not a branch.
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+      # Pinned to specific minor versions because the `@v5` / `@v6` major-tag
+      # resolution intermittently points at deleted commits in GitHub's
+      # action resolver, returning a 500 with "An action could not be found
+      # at the URI ...". Pinning fixes it.
+      - uses: actions/setup-go@v5.0.2
+        with:
+          go-version: "1.22"
+      - uses: goreleaser/goreleaser-action@v6.0.0
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
