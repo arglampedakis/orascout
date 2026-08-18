@@ -2,13 +2,16 @@ package deploy
 
 import (
 	"context"
-	"path/filepath"
+	"fmt"
 )
 
 type staticStrategy struct{}
 
 func (staticStrategy) Apply(ctx context.Context, req Request) error {
-	src := filepath.Join(req.ArtifactDir, req.Spec.SourceDir)
+	src, err := securePathJoin(req.ArtifactDir, req.Spec.SourceDir)
+	if err != nil {
+		return fmt.Errorf("source.dir rejected: %w", err)
+	}
 
 	clear := true // default per spec §3.3
 	if req.Spec.TargetClear != nil {

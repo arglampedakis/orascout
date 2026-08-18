@@ -30,6 +30,17 @@ auth:
   username: $REGISTRY_USERNAME
   password: $REGISTRY_TOKEN
 
+# Where deploys are allowed to write on this host. Any manifest whose
+# target.path falls outside these directories is rejected before any side
+# effect. These three roots match the sandbox's service layout — on a real
+# host, list your own deploy directories. Strongly recommended in
+# production: without it, push access to a watched repo is close to
+# arbitrary write access on the host.
+allowed_target_roots:
+  - /home/tomcat/jar-services
+  - /opt/tomcat/instances
+  - /var/www/html
+
 # Cadence and paths. Defaults are fine for the sandbox.
 poll_interval: 30s
 artifacts_dir: /var/lib/orascout/artifacts

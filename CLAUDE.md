@@ -52,7 +52,8 @@ internal/deploy/             Strategy interface + 5 strategies + hooks +
                                strategy_runonce.go
                                strategy_hookonly.go
                              Plus deploy.go (dispatcher), systemd.go (helpers),
-                             fsutil.go (copy/chown/chmod plumbing).
+                             fsutil.go (copy/chown/chmod plumbing), and
+                             safety.go (path validation — see below).
 internal/watcher/            Main poll loop. Ties config + registry + state +
                              deploy together. Run() loops, RunOnce() does one cycle.
 
@@ -113,6 +114,20 @@ Lets the `jar`/`war` strategies skip `systemctl` calls entirely (just copy the
 file). This is the path the E2E test and the static deploys in
 `examples/demo/` use. Without it, you couldn't test the strategies anywhere
 that doesn't have systemd, which would mean tests only run on Linux VMs.
+
+### Manifest paths are untrusted input — safety.go is the gate
+Anyone with push access to a watched repo controls the annotations, so
+`target.path=/` with `clear=true` would otherwise wipe the host.
+`internal/deploy/safety.go` enforces, BEFORE any side effect (service stop,
+hook, copy, clear): a built-in denylist of system paths (never
+configurable away), a minimum depth of 2 for clear operations, symlink
+resolution before clearing, containment of source/hook paths inside the
+artifact dir, and regular-files-only copying. The operator allowlist
+(`allowed_target_roots` in config) is the real security boundary — the
+denylist only stops catastrophic/obvious cases. Never add a write/clear
+primitive that bypasses these checks; `clearDirContents` calls
+`guardClearDir` itself as defense in depth. SPEC.md §10 is the normative
+description — keep the two in sync.
 
 ### State updated ONLY on full success
 `Run()` -> `cycleOne()` -> `deploy.Run()` -> `state.Set()`. If any step in

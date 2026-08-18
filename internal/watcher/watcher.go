@@ -39,6 +39,9 @@ func New(cfg *config.Config, logger *slog.Logger) (*Watcher, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(cfg.AllowedTargetRoots) == 0 {
+		logger.Warn("allowed_target_roots is not set — deploys may write anywhere outside the built-in denylist of system paths; set it in config.yaml to restrict deploys to specific directories")
+	}
 	return &Watcher{
 		cfg: cfg,
 		registry: registry.New(registry.Auth{
@@ -165,12 +168,13 @@ func (w *Watcher) cycleOne(ctx context.Context, ref config.RepoRef) (bool, error
 	}
 
 	req := deploy.Request{
-		ArtifactDir: artifactDir,
-		Repo:        ref.FullRef,
-		Digest:      currentDigest,
-		PrevDigest:  prev.Digest,
-		Spec:        spec,
-		Logger:      logger,
+		ArtifactDir:  artifactDir,
+		Repo:         ref.FullRef,
+		Digest:       currentDigest,
+		PrevDigest:   prev.Digest,
+		Spec:         spec,
+		AllowedRoots: w.cfg.AllowedTargetRoots,
+		Logger:       logger,
 	}
 	if err := deploy.Run(ctx, req); err != nil {
 		return false, fmt.Errorf("deploy: %w", err)

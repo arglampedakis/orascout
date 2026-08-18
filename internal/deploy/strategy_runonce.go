@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"log/slog"
 	"os/exec"
-	"path/filepath"
 )
 
 type runOnceStrategy struct{}
 
 func (runOnceStrategy) Apply(ctx context.Context, req Request) error {
-	file := filepath.Join(req.ArtifactDir, req.Spec.SourceFile)
+	file, err := securePathJoin(req.ArtifactDir, req.Spec.SourceFile)
+	if err != nil {
+		return fmt.Errorf("source.file rejected: %w", err)
+	}
 
 	tokens, err := parseShellCommand(req.Spec.RunonceCommand)
 	if err != nil {

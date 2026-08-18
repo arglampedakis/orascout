@@ -2,14 +2,17 @@ package deploy
 
 import (
 	"context"
-	"path/filepath"
+	"fmt"
 )
 
 type jarStrategy struct{}
 
 func (jarStrategy) Apply(ctx context.Context, req Request) error {
 	mgr := req.Spec.EffectiveServiceManager()
-	src := filepath.Join(req.ArtifactDir, req.Spec.SourceFile)
+	src, err := securePathJoin(req.ArtifactDir, req.Spec.SourceFile)
+	if err != nil {
+		return fmt.Errorf("source.file rejected: %w", err)
+	}
 
 	req.Logger.Info("stopping service", "unit", req.Spec.ServiceName, "manager", mgr)
 	if err := stopService(ctx, mgr, req.Spec.ServiceName); err != nil {

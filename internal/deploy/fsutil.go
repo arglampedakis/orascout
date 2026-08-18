@@ -12,7 +12,17 @@ import (
 // copyFile copies src to dst, creating parent dirs as needed. mode, if non-nil,
 // is applied to dst after the copy. owner, if non-empty ("user:group"), is
 // applied via /bin/chown (so we get the same parsing rules sysadmins expect).
+// src must be a regular file: symlinks are refused so an artifact cannot
+// smuggle host files (e.g. a link to /etc/shadow) into a deploy target.
 func copyFile(src, dst string, mode *uint32, owner string) error {
+	info, err := os.Lstat(src)
+	if err != nil {
+		return fmt.Errorf("stat src: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("source %q is not a regular file (mode %s) — symlinks and special files are not deployable", src, info.Mode())
+	}
+
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
@@ -79,6 +89,9 @@ func copyDir(srcDir, dstDir string, clear bool, mode *uint32, owner string) erro
 		if info.IsDir() {
 			return os.MkdirAll(target, info.Mode().Perm())
 		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("artifact contains non-regular file %q (mode %s) — symlinks and special files are not deployable", rel, info.Mode())
+		}
 		return copyFile(path, target, nil, "")
 	})
 	if walkErr != nil {
@@ -94,7 +107,14 @@ func copyDir(srcDir, dstDir string, clear bool, mode *uint32, owner string) erro
 }
 
 // clearDirContents removes everything under dir but leaves dir itself.
+// guardClearDir (safety.go) runs first as defense in depth behind the
+// request-level validation: it resolves symlinks and refuses protected or
+// suspiciously shallow paths, so this primitive can never rm -rf the host
+// even if a caller forgets to validate.
 func clearDirContents(dir string) error {
+	if err := guardClearDir(dir); err != nil {
+		return err
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -178,4 +198,3 @@ func applyTemplate(tokens []string, file string) []string {
 	}
 	return out
 }
-

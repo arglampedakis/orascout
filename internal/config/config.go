@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -43,6 +44,15 @@ type Config struct {
 	// LogFile is the file the daemon writes structured logs to.
 	// Empty = stderr only.
 	LogFile string `yaml:"log_file"`
+
+	// AllowedTargetRoots restricts where deploys may write on this host.
+	// When non-empty, every manifest target.path must fall under one of
+	// these directories or the deploy is rejected. When empty, only the
+	// built-in denylist of system paths applies and a warning is logged
+	// at startup. Strongly recommended in production: without it, push
+	// access to a watched repo is close to arbitrary write access on the
+	// host. Entries must be absolute paths and may not be "/".
+	AllowedTargetRoots []string `yaml:"allowed_target_roots"`
 
 	// Insecure allows http:// registries (for local testing). Default false.
 	Insecure bool `yaml:"insecure"`
@@ -137,6 +147,17 @@ func (c *Config) validate() error {
 	}
 	if c.PollInterval < time.Second {
 		return fmt.Errorf("poll_interval too small (got %s, minimum 1s)", c.PollInterval)
+	}
+	for i, r := range c.AllowedTargetRoots {
+		r = strings.TrimSpace(r)
+		if !strings.HasPrefix(r, "/") {
+			return fmt.Errorf("allowed_target_roots[%d] %q must be an absolute path", i, r)
+		}
+		cleaned := path.Clean(r)
+		if cleaned == "/" {
+			return fmt.Errorf("allowed_target_roots[%d] may not be \"/\" — that would defeat the allowlist", i)
+		}
+		c.AllowedTargetRoots[i] = cleaned
 	}
 	return nil
 }

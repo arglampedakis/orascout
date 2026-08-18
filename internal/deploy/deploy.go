@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,6 +27,10 @@ type Request struct {
 	PrevDigest string
 	// Spec is the parsed manifest annotations.
 	Spec *annotations.Spec
+	// AllowedRoots is the operator's allowlist of directories deploys may
+	// write to (config `allowed_target_roots`). Empty = built-in denylist
+	// only. See safety.go.
+	AllowedRoots []string
 	// Logger gets routed to the daemon's structured logger.
 	Logger *slog.Logger
 }
@@ -54,10 +57,17 @@ func Dispatch(t annotations.Type) (Strategy, error) {
 	return nil, fmt.Errorf("no strategy for type %q", t)
 }
 
-// Run executes the full deploy: pre-hook → strategy → healthcheck → post-hook.
-// Errors before/including the strategy and a failed healthcheck abort the
-// deploy. A failed post-hook is logged as a warning only.
+// Run executes the full deploy: validate → pre-hook → strategy →
+// healthcheck → post-hook. Errors before/including the strategy and a
+// failed healthcheck abort the deploy. A failed post-hook is logged as a
+// warning only.
 func Run(ctx context.Context, req Request) error {
+	// Path safety first — before the service is stopped, before hooks run,
+	// before anything touches the filesystem. See safety.go.
+	if err := validateRequest(req); err != nil {
+		return fmt.Errorf("unsafe deploy request rejected: %w", err)
+	}
+
 	if err := runHook(ctx, req, "pre", req.Spec.HookPre); err != nil {
 		return fmt.Errorf("pre-hook: %w", err)
 	}
@@ -88,7 +98,10 @@ func runHook(ctx context.Context, req Request, phase, hookRelPath string) error 
 	if hookRelPath == "" {
 		return nil
 	}
-	abs := filepath.Join(req.ArtifactDir, hookRelPath)
+	abs, err := securePathJoin(req.ArtifactDir, hookRelPath)
+	if err != nil {
+		return fmt.Errorf("hook script path rejected: %w", err)
+	}
 	if _, err := os.Stat(abs); err != nil {
 		return fmt.Errorf("hook script %s not found in artifact: %w", hookRelPath, err)
 	}
@@ -150,4 +163,3 @@ func (w logWriter) Write(p []byte) (int, error) {
 	}
 	return len(p), nil
 }
-

@@ -232,7 +232,54 @@ INFO level and the process exits 0 — this is normal, not an error.
 
 ---
 
-## 10. Forward compatibility
+## 10. Path safety & trust model
+
+Manifest annotations are **attacker-influenced input**: anyone with push
+access to a watched repo controls them. The puller therefore validates every
+path BEFORE any side effect (before stopping services, before running hooks,
+before touching the filesystem):
+
+**Target paths** (`target.path`) must:
+
+* be absolute, contain no `..` segments;
+* not be a protected system path (`/`, `/etc`, `/usr`, `/var`, `/opt`,
+  `/home`, `/tmp`, ... exactly) — deploy into a subdirectory instead;
+* not be anywhere inside a protected subtree — kernel/boot surfaces
+  (`/proc`, `/sys`, `/dev`, `/boot`, `/run`), directories where a file write
+  is code execution as root (`/etc`, `/bin`, `/sbin`, `/lib*`, `/usr/bin`,
+  `/usr/lib*`, `/usr/share`, `/var/spool/cron`), and the puller's own state
+  (`/var/lib/orascout`, `/var/log/orascout`);
+* when the pull-side config sets `allowed_target_roots`, fall under one of
+  the listed directories.
+
+**Clear operations** (`target.clear`, `target.clear-parent`) additionally:
+
+* require the cleared directory to be at least two levels deep
+  (`/data/site` is clearable, `/data` is not);
+* resolve symlinks first and re-validate the resolved path, so a target
+  directory that is secretly a symlink to `/` or `/etc` is refused.
+
+**Source paths** (`source.file`, `source.dir`, `hook.pre`, `hook.post`) must
+be relative and resolve to a location inside the pulled artifact directory —
+path traversal out of the artifact is refused. Artifacts may only deploy
+regular files: symlinks and special files inside an artifact are rejected,
+so an artifact cannot smuggle host files (e.g. a link to `/etc/shadow`) into
+a webroot.
+
+**Honest trust statement.** The built-in denylist prevents catastrophic
+accidents and the obvious escalation paths, but a denylist cannot enumerate
+every dangerous file on a host. Operators should treat push access to a
+watched repo as near-host access unless they:
+
+1. set `allowed_target_roots` in the pull-side config (the real security
+   boundary — the host decides where deploys may land, not the manifest), and
+2. only watch repos whose push access they control, because `hook.pre` /
+   `hook.post` / `runonce.command` / `healthcheck.cmd` execute arbitrary
+   commands from the artifact **by design**.
+
+---
+
+## 11. Forward compatibility
 
 * Unknown annotations under `dev.orascout.v1.*` MUST be ignored.
 * Unknown annotations under any other namespace MUST be ignored.

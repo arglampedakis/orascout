@@ -40,6 +40,16 @@ auth:
 # file to this artifact (relative to registry_prefix). Leave empty to disable.
 logs_push: deployment-logs:latest
 
+# STRONGLY RECOMMENDED: restrict where deploys may write on this host.
+# When set, any manifest whose target.path falls outside these directories
+# is rejected before any side effect. Without it, only a built-in denylist
+# of system paths applies — and push access to a watched repo is close to
+# arbitrary write access on this host.
+allowed_target_roots:
+  - /home/tomcat/jar-services
+  - /opt/tomcat/instances
+  - /var/www/html
+
 # Set to true ONLY for local test registries that speak http.
 insecure: false
 

@@ -23,6 +23,13 @@ log_file: /var/log/orascout/orascout.log
 
 insecure: true
 
+# Restrict deploys to the three demo target volumes. Any manifest pointing
+# anywhere else is rejected before any side effect.
+allowed_target_roots:
+  - /srv/jars
+  - /srv/webapps
+  - /srv/dist
+
 repos:
   - hello-jar:latest
   - hello-war:latest

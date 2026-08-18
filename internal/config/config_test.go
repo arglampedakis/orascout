@@ -68,6 +68,45 @@ func TestParsedRepos(t *testing.T) {
 	}
 }
 
+func TestAllowedTargetRootsValidation(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	// Relative root -> error.
+	_ = os.WriteFile(path, []byte(`
+registry_prefix: docker.io/myorg
+repos: ["a:latest"]
+allowed_target_roots: ["opt/apps"]
+`), 0o644)
+	if _, err := Load(path); err == nil {
+		t.Fatal("want error for relative allowed_target_roots entry")
+	}
+
+	// "/" as a root -> error (defeats the allowlist).
+	_ = os.WriteFile(path, []byte(`
+registry_prefix: docker.io/myorg
+repos: ["a:latest"]
+allowed_target_roots: ["/"]
+`), 0o644)
+	if _, err := Load(path); err == nil {
+		t.Fatal("want error for / as allowed_target_roots entry")
+	}
+
+	// Valid roots are cleaned (trailing slash dropped).
+	_ = os.WriteFile(path, []byte(`
+registry_prefix: docker.io/myorg
+repos: ["a:latest"]
+allowed_target_roots: ["/var/www/html/", "/opt/tomcat/instances"]
+`), 0o644)
+	c, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.AllowedTargetRoots[0] != "/var/www/html" {
+		t.Errorf("root[0] = %q, want cleaned /var/www/html", c.AllowedTargetRoots[0])
+	}
+}
+
 func TestEnvExpansion(t *testing.T) {
 	t.Setenv("FOO_TEST_TOKEN", "secret-value")
 
