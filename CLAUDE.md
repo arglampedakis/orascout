@@ -233,6 +233,24 @@ Things that cost time once. Worth knowing before they bite again.
 - **`go vet` catches unused vars in test files that `go build` lets slide.**
   Always `go vet ./...` before pushing.
 
+- **Newer Alpine (3.24+) dropped the standalone `wget` package.** `apk add
+  wget` fails; the busybox wget applet in the base image still exists. We
+  avoid the issue entirely by not downloading tools in-build (next item).
+
+- **Corporate VPNs can break container egress — especially BuildKit's.**
+  Symptom: `apk`/`wget`/`curl` inside `docker build` fail with TLS errors
+  ("TLS: unspecified error", "TLS handshake timeout") while the host and
+  sometimes `docker run` containers work. Mitigations used here: get CLI
+  tools via `COPY --from=<official image>` (pulls go through the daemon,
+  e.g. `ghcr.io/oras-project/oras:v1.2.0` for the oras CLI) instead of
+  in-build downloads; `DOCKER_BUILDKIT=0` falls back to the legacy builder
+  with normal bridge networking; `docker pull` with retries pre-warms the
+  local image cache. If everything fails, the network is flapping — wait.
+
+- **oras-go >= 2.6 requires Go >= 1.25.** The `go` directive in go.mod,
+  `go-version` in both workflows, and every `golang:X-alpine` builder image
+  must move together when bumping it.
+
 ---
 
 ## Out of scope (intentional, not gaps)

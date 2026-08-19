@@ -17,7 +17,7 @@ likely to land.
 
 ## Development setup
 
-You need either **Go 1.22+** or just **Docker** (every check runs in a
+You need either **Go 1.25+** or just **Docker** (every check runs in a
 container too).
 
 ```bash

@@ -4,21 +4,19 @@
 # This image is for testing only. The production image is the top-level
 # Dockerfile (smaller, no test tooling).
 
-FROM golang:1.22-alpine
+FROM golang:1.25-alpine
 
-ARG ORAS_VERSION=1.2.0
+# The oras CLI is copied from the official release image rather than
+# downloaded with wget/curl inside the build: image pulls go through the
+# Docker daemon, which works in environments where BuildKit's own network
+# is restricted (corporate proxies/VPNs), and the version is pinned by tag.
+COPY --from=ghcr.io/oras-project/oras:v1.2.0 /bin/oras /usr/local/bin/oras
 
 RUN apk add --no-cache \
       bash \
       jq \
       curl \
       ca-certificates \
-      tar \
-      wget \
-    && wget -q -O /tmp/oras.tgz \
-       "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" \
-    && tar -xzf /tmp/oras.tgz -C /usr/local/bin oras \
-    && rm /tmp/oras.tgz \
     && oras version
 
 WORKDIR /src

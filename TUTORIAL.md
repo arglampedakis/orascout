@@ -75,7 +75,7 @@ From the orascout repo root:
 docker compose -f examples/demo/docker-compose.yml up --build -d
 ```
 
-First run takes ~2 minutes (downloads `golang:1.22-alpine`, builds orascout,
+First run takes ~2 minutes (downloads `golang:1.25-alpine`, builds orascout,
 builds the test image, pulls `registry:2` and `nginx:alpine`). Subsequent
 brings-up are seconds.
 

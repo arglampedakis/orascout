@@ -13,7 +13,7 @@
 # this image is a development-time integration-test rig only.
 
 # ---------- stage 1: build orascout from the repo source ------------------
-FROM golang:1.22-alpine AS orascout-build
+FROM golang:1.25-alpine AS orascout-build
 WORKDIR /src
 COPY go.mod go.sum* ./
 RUN go mod download

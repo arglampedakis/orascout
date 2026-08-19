@@ -36,13 +36,13 @@ RUN mkdir -p /out \
 
 # ---------- stage 2: lightweight pusher with oras CLI --------------------
 FROM alpine:3.20
-ARG ORAS_VERSION=1.2.0
 
-RUN apk add --no-cache bash curl ca-certificates wget tar \
- && wget -q -O /tmp/oras.tgz \
-      "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" \
- && tar -xzf /tmp/oras.tgz -C /usr/local/bin oras \
- && rm /tmp/oras.tgz \
+# oras CLI copied from the official release image (via the Docker daemon)
+# instead of downloaded in-build — works behind restrictive proxies and
+# pins the version by tag.
+COPY --from=ghcr.io/oras-project/oras:v1.2.0 /bin/oras /usr/local/bin/oras
+
+RUN apk add --no-cache bash curl ca-certificates \
  && oras version
 
 # Drop the built fixtures and the push script into the image.
