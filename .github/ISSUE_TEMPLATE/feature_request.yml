@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose an enhancement (please read SPEC.md and the "Out of scope" list in CLAUDE.md first)
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the deployment scenario, not just the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed shape
+      description: >
+        If it changes deploy behaviour, sketch it as manifest annotations —
+        deploy intent lives on the manifest, not in host config. If it can't
+        be expressed as annotations, say why.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: e.g. could a hook script (`type=hook-only`) already do this?

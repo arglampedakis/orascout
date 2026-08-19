@@ -118,6 +118,12 @@ auto-deploy on every push. ORAS makes any OCI registry a generic artifact store;
 `orascout` is the daemon that turns that store into a real deployment target on
 a Linux host.
 
+## Contributing
+
+Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the dev
+setup and the rules of the road, and [SECURITY.md](SECURITY.md) for how to
+report vulnerabilities (privately, please).
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).

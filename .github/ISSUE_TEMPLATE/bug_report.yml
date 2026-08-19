@@ -1,0 +1,49 @@
+name: Bug report
+description: Something doesn't work the way SPEC.md / the docs say it should
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: orascout version
+      description: Output of `orascout version`
+      placeholder: v0.2.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Distro + how orascout runs (systemd timer, --once, container demo)
+      placeholder: Ubuntu 22.04, systemd timer
+    validations:
+      required: true
+  - type: input
+    id: registry
+    attributes:
+      label: Registry
+      placeholder: Docker Hub / GHCR / Harbor / registry:2
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened vs. what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: annotations
+    attributes:
+      label: Manifest annotations of the affected artifact
+      description: "`oras manifest fetch <ref> | jq .annotations` — redact anything private"
+      render: json
+  - type: textarea
+    id: config
+    attributes:
+      label: Config (redacted)
+      description: Your config.yaml with registry/credentials redacted
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: "`journalctl -u orascout.service` around the failure"
+      render: text
